@@ -50,8 +50,12 @@ pipeline {
                 sh "trivy fs . > trivyfs.txt"
              }
          }
-	 
+	stage("Quality Gate") {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'SonarQube-Token'
+                } 
      }
- }
+  }
     
-
+}
