@@ -10,12 +10,11 @@ pipeline {
         RELEASE = "1.0.0"
         DOCKER_USER = "goklzilla"
         DOCKER_PASS = 'CLOUDUSER'
-        IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
+        IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}" // Concatenate without "+"
         IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
-	
     }
     stages {
-        stage('clean workspace') {
+        stage('Clean Workspace') {
             steps {
                 cleanWs()
             }
@@ -25,18 +24,24 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/babavoss05/a-reddit-clone.git'
             }
         }
-        stage("Sonarqube Analysis") {
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
-                    sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=reddit-clone-CI \
-                    -Dsonar.projectKey=reddit-clone-CI'''
+                    sh '''
+                    $SCANNER_HOME/bin/sonar-scanner \
+                    -Dsonar.projectName=reddit-clone-CI \
+                    -Dsonar.projectKey=reddit-clone-CI
+                    '''
                 }
             }
         }
-        stage("Quality Gate") {
+        stage('Quality Gate') {
             steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'SonarQube-Token'
+                    def qualityGate = waitForQualityGate()
+                    if (qualityGate.status != 'OK') {
+                        error "Pipeline aborted due to SonarQube quality gate failure: ${qualityGate.status}"
+                    }
                 }
             }
         }
@@ -45,17 +50,10 @@ pipeline {
                 sh "npm install"
             }
         }
-        stage('TRIVY FS SCAN') {
+        stage('Trivy FS Scan') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
-             }
-         }
-	stage("Quality Gate") {
-            steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'SonarQube-Token'
-                } 
-     }
-  }
-    
+            }
+        }
+    }
 }
