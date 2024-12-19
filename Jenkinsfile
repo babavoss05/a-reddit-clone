@@ -58,7 +58,7 @@ pipeline {
         stage("Build & Push Docker Image") {
             steps {
                 script {
-                    docker.withRegistry('', 'docker-credentials-id') { // Replace with your Jenkins Docker credentials ID
+                    docker.withRegistry('', 'goklzilla') { // Replace with your Jenkins Docker credentials ID
                         def docker_image = docker.build("${IMAGE_NAME}")
                         docker_image.push("${IMAGE_TAG}")
                         docker_image.push('latest')
