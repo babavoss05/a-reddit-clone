@@ -10,7 +10,7 @@ pipeline {
         RELEASE = "1.0.0"
         DOCKER_USER = "goklzilla"
         DOCKER_PASS = 'CLOUDUSER'
-        IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}" // Concatenate without "+"
+        IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
         IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
     }
     stages {
@@ -53,6 +53,17 @@ pipeline {
         stage('Trivy FS Scan') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
+            }
+        }
+        stage("Build & Push Docker Image") {
+            steps {
+                script {
+                    docker.withRegistry('', 'docker-credentials-id') { // Replace with your Jenkins Docker credentials ID
+                        def docker_image = docker.build("${IMAGE_NAME}")
+                        docker_image.push("${IMAGE_TAG}")
+                        docker_image.push('latest')
+                    }
+                }
             }
         }
     }
