@@ -1,20 +1,24 @@
-pipeline {
+pipeline 
+{
     agent any
-    tools {
+    tools 
+    {
         jdk 'jdk17'
         nodejs 'node16'
     }
-    environment {
+    environment
+    {
         SCANNER_HOME = tool 'sonar-scanner'
-        APP_NAME = "reddit-clone-pipeline"
+        APP_NAME = "reddit-clone-app"
         RELEASE = "1.0.0"
         DOCKER_USER = "goklzillaa"
-        DOCKER_PASS = 'dckr_pat_sMME75c3wnwYybrUIXUl1xr0nwg'
+        DOCKER_PASS = 'dockerhub'
         IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
         IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
-	
     }
-    stages {
+    stages
+	{
+		stages {
         stage('clean workspace') {
             steps {
                 cleanWs()
@@ -28,8 +32,8 @@ pipeline {
         stage("Sonarqube Analysis") {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
-                    sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=reddit-clone-CI \
-                    -Dsonar.projectKey=reddit-clone-CI'''
+                    sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Reddit-Clone-CI \
+                    -Dsonar.projectKey=Reddit-Clone-CI'''
                 }
             }
         }
@@ -50,18 +54,8 @@ pipeline {
                 sh "trivy fs . > trivyfs.txt"
              }
          }
-	 stage("Build & Push Docker Image") {
-             steps {
-                 script {
-                     docker.withRegistry('',DOCKER_PASS) {
-                         docker_image = docker.build "${IMAGE_NAME}"
-                     }
-                     docker.withRegistry('',DOCKER_PASS) {
-                         docker_image.push("${IMAGE_TAG}")
-                         docker_image.push('latest')
-                     }
-                 }
-             }
-         }
-    }
+		
+  }
+	}
 }
+	
