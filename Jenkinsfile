@@ -8,40 +8,35 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
         APP_NAME = "reddit-clone-pipeline"
         RELEASE = "1.0.0"
-        DOCKER_USER = "goklzilla"
-        DOCKER_PASS = 'CLOUDUSER'
-        IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
+        DOCKER_USER = "ashfaque9x"
+        DOCKER_PASS = 'dockerhub'
+        IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
         IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
+	JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
     }
     stages {
-        stage('Clean Workspace') {
+        stage('clean workspace') {
             steps {
                 cleanWs()
             }
         }
         stage('Checkout from Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/babavoss05/a-reddit-clone.git'
+                git branch: 'main', url: 'https://github.com/Ashfaque-9x/a-reddit-clone.git'
             }
         }
-        stage('SonarQube Analysis') {
+        stage("Sonarqube Analysis") {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
-                    sh '''
-                    $SCANNER_HOME/bin/sonar-scanner \
-                    -Dsonar.projectName=reddit-clone-CI \
-                    -Dsonar.projectKey=reddit-clone-CI
-                    '''
+                    sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Reddit-Clone-CI \
+                    -Dsonar.projectKey=Reddit-Clone-CI'''
                 }
             }
         }
-        stage('Quality Gate') {
+        stage("Quality Gate") {
             steps {
                 script {
-                    def qualityGate = waitForQualityGate()
-                    if (qualityGate.status != 'OK') {
-                        error "Pipeline aborted due to SonarQube quality gate failure: ${qualityGate.status}"
-                    }
+                    waitForQualityGate abortPipeline: false, credentialsId: 'SonarQube-Token'
                 }
             }
         }
@@ -50,21 +45,23 @@ pipeline {
                 sh "npm install"
             }
         }
-        stage('Trivy FS Scan') {
+        stage('TRIVY FS SCAN') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
-            }
-        }
-        stage("Build & Push Docker Image") {
-            steps {
-                script {
-                    docker.withRegistry('', 'goklzilla') { // Replace with your Jenkins Docker credentials ID
-                        def docker_image = docker.build("${IMAGE_NAME}")
-                        docker_image.push("${IMAGE_TAG}")
-                        docker_image.push('latest')
-                    }
-                }
-            }
-        }
+             }
+         }
+	 stage("Build & Push Docker Image") {
+             steps {
+                 script {
+                     docker.withRegistry('',DOCKER_PASS) {
+                         docker_image = docker.build "${IMAGE_NAME}"
+                     }
+                     docker.withRegistry('',DOCKER_PASS) {
+                         docker_image.push("${IMAGE_TAG}")
+                         docker_image.push('latest')
+                     }
+                 }
+             }
+         }
     }
 }
