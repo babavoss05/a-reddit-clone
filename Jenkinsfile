@@ -1,24 +1,19 @@
-pipeline 
-{
+pipeline {
     agent any
-    tools 
-    {
+    tools {
         jdk 'jdk17'
         nodejs 'node16'
     }
-    environment
-    {
+    environment {
         SCANNER_HOME = tool 'sonar-scanner'
         APP_NAME = "reddit-clone-app"
         RELEASE = "1.0.0"
         DOCKER_USER = "goklzillaa"
         DOCKER_PASS = 'dockerhub'
-        IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
+        IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
         IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
     }
-    stages
-	{
-		stages {
+    stages {
         stage('clean workspace') {
             steps {
                 cleanWs()
@@ -52,10 +47,7 @@ pipeline
         stage('TRIVY FS SCAN') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
-             }
-         }
-		
-  }
-	}
+            }
+        }
+    }
 }
-	
